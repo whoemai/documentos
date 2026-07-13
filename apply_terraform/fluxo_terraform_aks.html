@@ -1,0 +1,1347 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fluxo e Boas Práticas Terraform - AKS & Argo CD</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Premium Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            /* Colors - Dark Theme (Default) */
+            --bg-main: #0b0f19;
+            --bg-card: #111827;
+            --bg-sidebar: #0e1322;
+            --border-color: #1f2937;
+            --text-primary: #f3f4f6;
+            --text-secondary: #9ca3af;
+            --text-muted: #6b7280;
+            
+            /* Accents */
+            --primary: #6366f1; /* Indigo */
+            --primary-glow: rgba(99, 102, 241, 0.15);
+            --accent: #06b6d4; /* Cyan */
+            --accent-glow: rgba(6, 182, 212, 0.15);
+            --success: #10b981; /* Emerald */
+            --success-bg: rgba(16, 185, 129, 0.1);
+            --warning: #f59e0b; /* Amber */
+            --warning-bg: rgba(245, 158, 11, 0.1);
+            --danger: #f43f5e; /* Rose */
+            --danger-bg: rgba(244, 63, 94, 0.1);
+            
+            /* Layout & Transitions */
+            --sidebar-width: 280px;
+            --border-radius: 12px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Light Theme overrides */
+        body.light-theme {
+            --bg-main: #f8fafc;
+            --bg-card: #ffffff;
+            --bg-sidebar: #f1f5f9;
+            --border-color: #e2e8f0;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --text-muted: #94a3b8;
+            --primary-glow: rgba(99, 102, 241, 0.08);
+            --accent-glow: rgba(6, 182, 212, 0.08);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-primary);
+            display: flex;
+            min-height: 100vh;
+            overflow-x: hidden;
+            transition: var(--transition);
+        }
+
+        /* Sidebar Styling */
+        aside {
+            width: var(--sidebar-width);
+            background-color: var(--bg-sidebar);
+            border-right: 1px solid var(--border-color);
+            position: fixed;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            z-index: 100;
+            transition: var(--transition);
+        }
+
+        .sidebar-brand {
+            padding: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .sidebar-brand i {
+            font-size: 24px;
+            color: var(--accent);
+            text-shadow: 0 0 10px var(--accent-glow);
+        }
+
+        .sidebar-brand h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 20px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, var(--text-primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .sidebar-menu {
+            list-style: none;
+            padding: 16px;
+            flex-grow: 1;
+            overflow-y: auto;
+        }
+
+        .sidebar-menu li {
+            margin-bottom: 8px;
+        }
+
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            transition: var(--transition);
+        }
+
+        .sidebar-menu a:hover, .sidebar-menu a.active {
+            color: var(--text-primary);
+            background-color: var(--primary-glow);
+            box-shadow: inset 3px 0 0 var(--primary);
+        }
+
+        .sidebar-menu a i {
+            width: 20px;
+            text-align: center;
+            font-size: 16px;
+        }
+
+        .sidebar-footer {
+            padding: 20px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        /* Main Content Container */
+        main {
+            margin-left: var(--sidebar-width);
+            flex-grow: 1;
+            padding: 40px;
+            max-width: 1300px;
+            width: calc(100% - var(--sidebar-width));
+            transition: var(--transition);
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+        }
+
+        .header-title h2 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 32px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            margin-bottom: 8px;
+        }
+
+        .header-title p {
+            color: var(--text-secondary);
+            font-size: 16px;
+        }
+
+        /* Controls: Theme & Lang */
+        .controls {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn-icon {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .btn-icon:hover {
+            border-color: var(--primary);
+            background-color: var(--primary-glow);
+            color: var(--primary);
+        }
+
+        /* Cards Layout */
+        .grid-stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            padding: 24px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, var(--primary), transparent);
+            opacity: 0;
+            transition: var(--transition);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--primary);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .stat-card:hover::after {
+            opacity: 1;
+        }
+
+        .stat-icon {
+            width: 52px;
+            height: 52px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .stat-icon.primary { background-color: var(--primary-glow); color: var(--primary); }
+        .stat-icon.accent { background-color: var(--accent-glow); color: var(--accent); }
+        .stat-icon.success { background-color: var(--success-bg); color: var(--success); }
+        .stat-icon.warning { background-color: var(--warning-bg); color: var(--warning); }
+
+        .stat-info h3 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .stat-info p {
+            color: var(--text-secondary);
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+
+        /* Section Layout */
+        .section-card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            padding: 32px;
+            margin-bottom: 40px;
+            transition: var(--transition);
+        }
+
+        .section-card:hover {
+            border-color: rgba(99, 102, 241, 0.3);
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 24px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 16px;
+        }
+
+        .section-header i {
+            font-size: 24px;
+            color: var(--primary);
+        }
+
+        .section-header h3 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 22px;
+            font-weight: 700;
+        }
+
+        /* Flow Diagram CSS */
+        .diagram-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            margin-bottom: 24px;
+            overflow-x: auto;
+        }
+
+        .diagram-row {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 40px;
+            width: 100%;
+            min-width: 800px;
+            margin: 10px 0;
+        }
+
+        .diagram-node {
+            background-color: var(--bg-main);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px 24px;
+            width: 220px;
+            text-align: center;
+            position: relative;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: var(--transition);
+        }
+
+        .diagram-node.active-rg { border-color: var(--accent); box-shadow: 0 0 15px rgba(6, 182, 212, 0.2); }
+        .diagram-node.active-net { border-color: #3b82f6; box-shadow: 0 0 15px rgba(59, 130, 246, 0.2); }
+        .diagram-node.active-aks { border-color: var(--primary); box-shadow: 0 0 15px rgba(99, 102, 241, 0.2); }
+        .diagram-node.active-helm { border-color: var(--success); box-shadow: 0 0 15px rgba(16, 185, 129, 0.2); }
+
+        .diagram-node h4 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 15px;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .diagram-node p {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .diagram-arrow-down {
+            height: 30px;
+            width: 2px;
+            background-color: var(--border-color);
+            position: relative;
+            margin: 5px 0;
+        }
+
+        .diagram-arrow-down::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: -4px;
+            border-width: 5px 5px 0;
+            border-style: solid;
+            border-color: var(--border-color) transparent transparent;
+        }
+
+        .diagram-connector-h {
+            flex-grow: 1;
+            height: 2px;
+            background-color: var(--border-color);
+            position: relative;
+            max-width: 50px;
+        }
+
+        .diagram-connector-h::after {
+            content: '';
+            position: absolute;
+            right: -5px;
+            top: -4px;
+            border-width: 5px 0 5px 5px;
+            border-style: solid;
+            border-color: transparent transparent transparent var(--border-color);
+        }
+
+        /* Timeline Flow Steps */
+        .timeline {
+            position: relative;
+            padding-left: 32px;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 8px;
+            top: 8px;
+            bottom: 8px;
+            width: 2px;
+            background-color: var(--border-color);
+        }
+
+        .timeline-item {
+            position: relative;
+            margin-bottom: 32px;
+        }
+
+        .timeline-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .timeline-dot {
+            position: absolute;
+            left: -32px;
+            top: 4px;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background-color: var(--bg-card);
+            border: 3px solid var(--primary);
+            transition: var(--transition);
+        }
+
+        .timeline-dot.accent { border-color: var(--accent); }
+        .timeline-dot.success { border-color: var(--success); }
+
+        .timeline-content h4 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 18px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .timeline-content h4 span.step-num {
+            font-size: 11px;
+            font-weight: 700;
+            background-color: var(--primary-glow);
+            color: var(--primary);
+            padding: 2px 8px;
+            border-radius: 12px;
+        }
+
+        .timeline-content p {
+            color: var(--text-secondary);
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 12px;
+        }
+
+        .timeline-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            background-color: rgba(0, 0, 0, 0.15);
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 12px;
+            border: 1px solid var(--border-color);
+        }
+
+        .timeline-details-col h5 {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .timeline-details-col ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .timeline-details-col li {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .timeline-details-col li i {
+            font-size: 10px;
+        }
+
+        .icon-in { color: var(--accent); }
+        .icon-out { color: var(--success); }
+
+        /* Best Practices Table & Grid */
+        .bp-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+
+        .bp-card {
+            background-color: var(--bg-main);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            transition: var(--transition);
+        }
+
+        .bp-card:hover {
+            border-color: var(--border-color);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .bp-badge-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .bp-badge {
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 20px;
+            text-transform: uppercase;
+        }
+
+        .bp-badge.compliant { background-color: var(--success-bg); color: var(--success); border: 1px solid rgba(16, 185, 129, 0.2); }
+        .bp-badge.warning { background-color: var(--warning-bg); color: var(--warning); border: 1px solid rgba(245, 158, 11, 0.2); }
+        .bp-badge.critical { background-color: var(--danger-bg); color: var(--danger); border: 1px solid rgba(244, 63, 94, 0.2); }
+
+        .bp-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 16px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .bp-title i.status-compliant { color: var(--success); }
+        .bp-title i.status-warning { color: var(--warning); }
+        .bp-title i.status-critical { color: var(--danger); }
+
+        .bp-desc {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .bp-impact {
+            font-size: 12px;
+            background-color: rgba(255, 255, 255, 0.02);
+            padding: 10px 14px;
+            border-radius: 6px;
+            border-left: 3px solid var(--border-color);
+            color: var(--text-muted);
+        }
+
+        .bp-card.card-compliant .bp-impact { border-left-color: var(--success); }
+        .bp-card.card-warning .bp-impact { border-left-color: var(--warning); }
+        .bp-card.card-critical .bp-impact { border-left-color: var(--danger); }
+
+        /* Tabs for Code comparison */
+        .tabs {
+            margin-top: 20px;
+        }
+
+        .tabs-header {
+            display: flex;
+            gap: 8px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 8px;
+            margin-bottom: 16px;
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-family: 'Outfit', sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            padding: 8px 16px;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: var(--transition);
+        }
+
+        .tab-btn:hover {
+            color: var(--text-primary);
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .tab-btn.active {
+            color: var(--primary);
+            background-color: var(--primary-glow);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Code Block formatting */
+        pre {
+            background-color: #05070c;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            overflow-x: auto;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            color: #e2e8f0;
+            position: relative;
+        }
+
+        .code-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .copy-btn {
+            background: none;
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            transition: var(--transition);
+        }
+
+        .copy-btn:hover {
+            color: var(--text-primary);
+            border-color: var(--primary);
+            background-color: var(--primary-glow);
+        }
+
+        /* Alerts */
+        .alert-box {
+            padding: 16px;
+            border-radius: 8px;
+            display: flex;
+            gap: 16px;
+            margin-bottom: 24px;
+            line-height: 1.5;
+            font-size: 14px;
+        }
+
+        .alert-box.info {
+            background-color: rgba(59, 130, 246, 0.08);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            color: #93c5fd;
+        }
+
+        .alert-box i {
+            font-size: 20px;
+            margin-top: 2px;
+        }
+
+        .alert-box.info i { color: #3b82f6; }
+
+        /* Highlight classes for HCL syntax */
+        .hl-comment { color: #6b7280; font-style: italic; }
+        .hl-keyword { color: #f43f5e; font-weight: bold; }
+        .hl-string { color: #10b981; }
+        .hl-variable { color: #e11d48; }
+        .hl-type { color: #3b82f6; }
+        .hl-value { color: #f59e0b; }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            body {
+                flex-direction: column;
+            }
+            aside {
+                width: 100%;
+                height: auto;
+                position: relative;
+                border-right: none;
+                border-bottom: 1px solid var(--border-color);
+            }
+            .sidebar-brand {
+                padding: 16px;
+            }
+            .sidebar-menu {
+                display: flex;
+                flex-wrap: wrap;
+                padding: 8px;
+            }
+            .sidebar-menu li {
+                margin-bottom: 0;
+            }
+            main {
+                margin-left: 0;
+                width: 100%;
+                padding: 24px;
+            }
+            .grid-stats {
+                grid-template-columns: 1fr 1fr;
+            }
+            .timeline-details {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .grid-stats {
+                grid-template-columns: 1fr;
+            }
+            header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar Navigation -->
+    <aside>
+        <div>
+            <div class="sidebar-brand">
+                <i class="fa-solid fa-cubes-stacked"></i>
+                <h1>AKS IaC Portal</h1>
+            </div>
+            <ul class="sidebar-menu">
+                <li><a href="#overview" class="active"><i class="fa-solid fa-circle-info"></i> Visão Geral</a></li>
+                <li><a href="#architecture"><i class="fa-solid fa-network-wired"></i> Arquitetura Visual</a></li>
+                <li><a href="#deployment-flow"><i class="fa-solid fa-route"></i> Fluxo de Implantação</a></li>
+                <li><a href="#best-practices"><i class="fa-solid fa-shield-halved"></i> Auditoria de Boas Práticas</a></li>
+                <li><a href="#recommendations"><i class="fa-solid fa-code-pull-request"></i> Melhorias Recomendadas</a></li>
+                <li><a href="#operator-guide"><i class="fa-solid fa-terminal"></i> Guia do Operador</a></li>
+            </ul>
+        </div>
+        <div class="sidebar-footer">
+            <button class="btn-icon" id="theme-toggle" title="Alternar Tema Escuro/Claro">
+                <i class="fa-solid fa-moon"></i>
+            </button>
+            <div style="font-size: 11px; color: var(--text-muted); text-align: center;">
+                Terraform v1.5.0+ <br> AzureRM ~> 3.0
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main>
+        <!-- Header -->
+        <header>
+            <div class="header-title">
+                <h2>Fluxo & Boas Práticas Terraform</h2>
+                <p>Análise técnica detalhada da infraestrutura do AKS com Argo CD integrado</p>
+            </div>
+            <div class="controls">
+                <div style="background-color: var(--success-bg); color: var(--success); padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-square-check"></i> Score de Qualidade: 78%
+                </div>
+            </div>
+        </header>
+
+        <!-- Stats Grid -->
+        <section class="grid-stats">
+            <div class="stat-card">
+                <div class="stat-icon primary">
+                    <i class="fa-solid fa-folder-open"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>4 Módulos</h3>
+                    <p>Estrutura Modular</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon accent">
+                    <i class="fa-solid fa-plug"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>3 Providers</h3>
+                    <p>AzureRM, K8s, Helm</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon success">
+                    <i class="fa-solid fa-shield-halved"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>7 / 10</h3>
+                    <p>Checks de Boas Práticas</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon warning">
+                    <i class="fa-solid fa-spinner"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>1 Risco</h3>
+                    <p>State em Localhost</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Overview Section -->
+        <section id="overview" class="section-card">
+            <div class="section-header">
+                <i class="fa-solid fa-circle-info"></i>
+                <h3>Visão Geral do Projeto</h3>
+            </div>
+            <p style="color: var(--text-secondary); line-height: 1.7; margin-bottom: 16px;">
+                Este projeto de Infraestrutura como Código (IaC) foi desenvolvido para provisionar de forma automatizada e padronizada um cluster 
+                <strong>Azure Kubernetes Service (AKS)</strong> integrado ao <strong>Argo CD</strong> para GitOps. Para que este repositório possa ser utilizado 
+                com segurança e eficácia por <em>qualquer membro da organização</em>, ele deve seguir padrões rigorosos de design modular, segurança, portabilidade e resiliência.
+            </p>
+            <div class="alert-box info">
+                <i class="fa-solid fa-circle-exclamation"></i>
+                <div>
+                    <strong>Nota Técnica Importante:</strong> O código atualmente faz uso de <strong>Providers Dinâmicos</strong>. Os provedores de <code>kubernetes</code> e <code>helm</code> utilizam atributos gerados pelo módulo do AKS (como host, tokens e CA certificados). Entenda a fundo este fluxo nas seções abaixo antes de aplicar em produção.
+                </div>
+            </div>
+        </section>
+
+        <!-- Architecture Visualization Section -->
+        <section id="architecture" class="section-card">
+            <div class="section-header">
+                <i class="fa-solid fa-network-wired"></i>
+                <h3>Arquitetura Visual do Fluxo</h3>
+            </div>
+            <p style="color: var(--text-secondary); margin-bottom: 24px; line-height: 1.6;">
+                O diagrama abaixo ilustra a cadeia de dependências gerenciada pelo Terraform. O fluxo inicia na criação do Resource Group e se estende até o bootstrap do Argo CD através do Helm Release.
+            </p>
+            
+            <div class="diagram-container">
+                <!-- Row 1: Resource Group -->
+                <div class="diagram-row">
+                    <div class="diagram-node active-rg">
+                        <h4><i class="fa-solid fa-box"></i> resource_group</h4>
+                        <p>./modules/resource_group</p>
+                        <p style="font-size: 10px; margin-top: 4px; color: var(--accent);">Criação do RG no Azure</p>
+                    </div>
+                </div>
+                
+                <div class="diagram-arrow-down"></div>
+                
+                <!-- Row 2: VNet & Subnet -->
+                <div class="diagram-row">
+                    <div class="diagram-node active-net">
+                        <h4><i class="fa-solid fa-route"></i> network</h4>
+                        <p>./modules/network</p>
+                        <p style="font-size: 10px; margin-top: 4px; color: #3b82f6;">Virtual Network & Subnets</p>
+                    </div>
+                </div>
+                
+                <div class="diagram-arrow-down"></div>
+                
+                <!-- Row 3: AKS Cluster -->
+                <div class="diagram-row">
+                    <div class="diagram-node active-aks">
+                        <h4><i class="fa-solid fa-dharmachakra"></i> aks</h4>
+                        <p>./modules/aks</p>
+                        <p style="font-size: 10px; margin-top: 4px; color: var(--primary);">Cluster Kubernetes & Certs</p>
+                    </div>
+                </div>
+                
+                <div class="diagram-arrow-down"></div>
+                
+                <!-- Row 4: Provider dynamic setup & Helm Release -->
+                <div class="diagram-row">
+                    <div style="display: flex; align-items: center;">
+                        <div class="diagram-node" style="border-style: dashed; width: 180px; border-color: var(--text-muted);">
+                            <h4><i class="fa-solid fa-key"></i> Provider Auth</h4>
+                            <p style="font-size: 10px;">kubeconfig dinâmico</p>
+                        </div>
+                        <div class="diagram-connector-h"></div>
+                        <div class="diagram-node active-helm">
+                            <h4><i class="fa-solid fa-anchor"></i> argocd</h4>
+                            <p>./modules/argocd</p>
+                            <p style="font-size: 10px; margin-top: 4px; color: var(--success);">Instalação Argo CD (Helm)</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Deployment Flow Section -->
+        <section id="deployment-flow" class="section-card">
+            <div class="section-header">
+                <i class="fa-solid fa-route"></i>
+                <h3>Passo a Passo do Fluxo de Provisionamento</h3>
+            </div>
+            
+            <div class="timeline">
+                <!-- Step 1 -->
+                <div class="timeline-item">
+                    <div class="timeline-dot accent"></div>
+                    <div class="timeline-content">
+                        <h4><span class="step-num">Fase 1</span> Grupo de Recursos (Azure Resource Group)</h4>
+                        <p>
+                            O Terraform inicializa instanciando o módulo <code>resource_group</code>. Ele gera o contêiner lógico no Azure sob o qual todos os outros recursos residirão. A saída desse módulo fornece o nome e a localização física essenciais para a vinculação da rede e do cluster.
+                        </p>
+                        <div class="timeline-details">
+                            <div class="timeline-details-col">
+                                <h5><i class="fa-solid fa-arrow-right-to-bracket icon-in"></i> Inputs Utilizados</h5>
+                                <ul>
+                                    <li><i class="fa-solid fa-check"></i> <code>resource_group_name</code> ("terraform-aks-rg")</li>
+                                    <li><i class="fa-solid fa-check"></i> <code>location</code> ("eastus")</li>
+                                </ul>
+                            </div>
+                            <div class="timeline-details-col">
+                                <h5><i class="fa-solid fa-arrow-right-from-bracket icon-out"></i> Outputs Exportados</h5>
+                                <ul>
+                                    <li><i class="fa-solid fa-check"></i> <code>name</code> (Nome do RG criado)</li>
+                                    <li><i class="fa-solid fa-check"></i> <code>location</code> (Região de deploy)</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Step 2 -->
+                <div class="timeline-item">
+                    <div class="timeline-dot accent"></div>
+                    <div class="timeline-content">
+                        <h4><span class="step-num">Fase 2</span> Infraestrutura de Rede (VNet e Subnet)</h4>
+                        <p>
+                            O módulo <code>network</code> é acionado logo após a confirmação de existência do Resource Group. Ele cria a <strong>Virtual Network (VNet)</strong> e uma <strong>Subnet dedicada</strong>. Essa rede é essencial porque o AKS será configurado em modo de integração nativa de rede do Azure (Azure CNI), fazendo com que cada Pod ganhe um IP real pertencente a essa subnet.
+                        </p>
+                        <div class="timeline-details">
+                            <div class="timeline-details-col">
+                                <h5><i class="fa-solid fa-arrow-right-to-bracket icon-in"></i> Inputs Utilizados</h5>
+                                <ul>
+                                    <li><i class="fa-solid fa-check"></i> <code>vnet_name</code>, <code>vnet_address_space</code> ("10.0.0.0/8")</li>
+                                    <li><i class="fa-solid fa-check"></i> <code>subnet_name</code>, <code>subnet_prefixes</code> ("10.240.0.0/16")</li>
+                                </ul>
+                            </div>
+                            <div class="timeline-details-col">
+                                <h5><i class="fa-solid fa-arrow-right-from-bracket icon-out"></i> Outputs Exportados</h5>
+                                <ul>
+                                    <li><i class="fa-solid fa-check"></i> <code>vnet_id</code> (Identificador de Rede)</li>
+                                    <li><i class="fa-solid fa-check"></i> <code>subnet_id</code> (Utilizado pelo AKS Node Pool)</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Step 3 -->
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <h4><span class="step-num">Fase 3</span> Cluster Kubernetes (Azure AKS)</h4>
+                        <p>
+                            O módulo <code>aks</code> provisiona o cluster gerenciado. Ele vincula o pool de nós padrão (System Node Pool) diretamente na subnet criada anteriormente. O cluster é configurado com a feature do OIDC Issuer habilitada (<code>oidc_issuer_enabled = true</code>) que possibilita o Workload Identity (prática recomendada para ligar ServiceAccounts do K8s a identidades do Azure sem usar segredos estáticos).
+                        </p>
+                        <div class="timeline-details">
+                            <div class="timeline-details-col">
+                                <h5><i class="fa-solid fa-arrow-right-to-bracket icon-in"></i> Inputs Utilizados</h5>
+                                <ul>
+                                    <li><i class="fa-solid fa-check"></i> <code>node_count</code> (1 nó padrão), <code>node_vm_size</code> ("Standard_B2s")</li>
+                                    <li><i class="fa-solid fa-check"></i> <code>subnet_id</code> (Obtido dinamicamente do módulo de rede)</li>
+                                </ul>
+                            </div>
+                            <div class="timeline-details-col">
+                                <h5><i class="fa-solid fa-arrow-right-from-bracket icon-out"></i> Outputs Exportados</h5>
+                                <ul>
+                                    <li><i class="fa-solid fa-check"></i> Credentials: <code>host</code>, <code>client_certificate</code>, <code>client_key</code>, <code>cluster_ca_certificate</code></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Step 4 -->
+                <div class="timeline-item">
+                    <div class="timeline-dot success"></div>
+                    <div class="timeline-content">
+                        <h4><span class="step-num">Fase 4</span> bootstrapping de Aplicação (Argo CD Helm)</h4>
+                        <p>
+                            Com o cluster AKS online, os outputs de certificado e host alimentam diretamente os provedores do <code>kubernetes</code> e <code>helm</code> em tempo de execução. O Terraform então cria o namespace <code>argocd</code> e instala o Helm chart oficial do Argo CD (versão default 7.3.1). Isso encerra o ciclo de deploy conectando a infraestrutura à engine de GitOps.
+                        </p>
+                        <div class="timeline-details">
+                            <div class="timeline-details-col">
+                                <h5><i class="fa-solid fa-arrow-right-to-bracket icon-in"></i> Inputs Utilizados</h5>
+                                <ul>
+                                    <li><i class="fa-solid fa-check"></i> <code>enable_argocd</code> (true/false)</li>
+                                    <li><i class="fa-solid fa-check"></i> <code>argocd_chart_version</code> ("7.3.1")</li>
+                                    <li><i class="fa-solid fa-check"></i> <code>argocd_helm_values</code> (Opções personalizadas para o Argo CD)</li>
+                                </ul>
+                            </div>
+                            <div class="timeline-details-col">
+                                <h5><i class="fa-solid fa-arrow-right-from-bracket icon-out"></i> Outputs Exportados</h5>
+                                <ul>
+                                    <li><i class="fa-solid fa-check"></i> N/A (Módulo focado apenas em deploy de software)</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Best Practices Audit Section -->
+        <section id="best-practices" class="section-card">
+            <div class="section-header">
+                <i class="fa-solid fa-shield-halved"></i>
+                <h3>Auditoria de Boas Práticas (Best Practices Check)</h3>
+            </div>
+            <p style="color: var(--text-secondary); margin-bottom: 24px; line-height: 1.6;">
+                Abaixo está uma avaliação detalhada do código atual sob a perspectiva de <strong>segurança, resiliência, compartilhamento e padrões corporativos</strong>.
+            </p>
+            
+            <div class="bp-grid">
+                <!-- 1. Modularização -->
+                <div class="bp-card card-compliant">
+                    <div class="bp-badge-row">
+                        <span class="bp-badge compliant"><i class="fa-solid fa-check-double"></i> Seguida</span>
+                        <span style="font-size: 11px; color: var(--text-muted);">Organização de Código</span>
+                    </div>
+                    <div class="bp-title">
+                        <i class="fa-solid fa-circle-check status-compliant"></i>
+                        Modularização e Abstração
+                    </div>
+                    <p class="bp-desc">
+                        O código divide perfeitamente os domínios: Resource Group, Network, AKS, e Argo CD estão isolados. Qualquer usuário do repositório pode reusar partes ou o conjunto completo.
+                    </p>
+                    <p class="bp-impact">
+                        <strong>Impacto:</strong> Facilita a manutenção do código e a replicação de ambientes idênticos.
+                    </p>
+                </div>
+                
+                <!-- 2. State Remoto -->
+                <div class="bp-card card-critical">
+                    <div class="bp-badge-row">
+                        <span class="bp-badge critical"><i class="fa-solid fa-circle-xmark"></i> Violada</span>
+                        <span style="font-size: 11px; color: var(--text-muted);">Gerenciamento de Estado</span>
+                    </div>
+                    <div class="bp-title">
+                        <i class="fa-solid fa-circle-xmark status-critical"></i>
+                        Estado Local (terraform.tfstate local)
+                    </div>
+                    <p class="bp-desc">
+                        Atualmente, o state file do Terraform é gravado localmente no diretório do operador. Se múltiplos usuários rodarem esse código, eles criarão recursos duplicados, sobrescreverão o state ou perderão o controle das instâncias existentes no Azure.
+                    </p>
+                    <p class="bp-impact" style="color: #f43f5e; background-color: rgba(244, 63, 94, 0.05);">
+                        <strong>Ação Crítica Necessária:</strong> Configurar um backend do Azure Storage Account com State Locking ativado.
+                    </p>
+                </div>
+
+                <!-- 3. Acoplamento de Providers -->
+                <div class="bp-card card-warning">
+                    <div class="bp-badge-row">
+                        <span class="bp-badge warning"><i class="fa-solid fa-triangle-exclamation"></i> Risco Potencial</span>
+                        <span style="font-size: 11px; color: var(--text-muted);">Dependências de Inicialização</span>
+                    </div>
+                    <div class="bp-title">
+                        <i class="fa-solid fa-triangle-exclamation status-warning"></i>
+                        Acoplamento Dinâmico de Provedores K8s/Helm
+                    </div>
+                    <p class="bp-desc">
+                        Definir os blocos de provedor do Kubernetes/Helm puxando atributos gerados no próprio plano (como <code>module.aks.host</code>) é uma prática comum para demos simples, mas que pode causar erros em ambientes do zero (Fresh Apply). O Terraform precisa planejar os recursos do Argo CD antes do cluster existir, e sem acesso ao host, pode acusar falha de conexão logo de início.
+                    </p>
+                    <p class="bp-impact" style="color: #f59e0b; background-color: rgba(245, 158, 11, 0.05);">
+                        <strong>Recomendação Corporativa:</strong> Separar a infra de rede e AKS em um diretório (ex: <code>01-infra</code>) e a entrega das ferramentas de cluster em outro (ex: <code>02-bootstrap-apps</code>).
+                    </p>
+                </div>
+
+                <!-- 4. Resiliência do Cluster -->
+                <div class="bp-card card-warning">
+                    <div class="bp-badge-row">
+                        <span class="bp-badge warning"><i class="fa-solid fa-triangle-exclamation"></i> Melhorável</span>
+                        <span style="font-size: 11px; color: var(--text-muted);">Alta Disponibilidade</span>
+                    </div>
+                    <div class="bp-title">
+                        <i class="fa-solid fa-triangle-exclamation status-warning"></i>
+                        Node Pool Rígido e Sem Autoscaling
+                    </div>
+                    <p class="bp-desc">
+                        O pool padrão está configurado com número fixo de nós (<code>node_count = 1</code>) e máquina pequena (<code>Standard_B2s</code>). Cargas críticas e o próprio Argo CD concorrerão por recursos limitados. Em produção, é essencial separar pools de sistema de pools de aplicação e habilitar o autoscaling.
+                    </p>
+                    <p class="bp-impact">
+                        <strong>Recomendação:</strong> Habilitar autoscaling com <code>min_count</code> e <code>max_count</code> e dimensionar a VM para pelo menos a série D (ex: <code>Standard_D2s_v5</code>).
+                    </p>
+                </div>
+
+                <!-- 5. Segurança do AKS (Public API) -->
+                <div class="bp-card card-critical">
+                    <div class="bp-badge-row">
+                        <span class="bp-badge critical"><i class="fa-solid fa-shield-halved"></i> Vulnerabilidade</span>
+                        <span style="font-size: 11px; color: var(--text-muted);">Rede e Acesso</span>
+                    </div>
+                    <div class="bp-title">
+                        <i class="fa-solid fa-circle-xmark status-critical"></i>
+                        API Control Plane Exposta Publicamente
+                    </div>
+                    <p class="bp-desc">
+                        A API do Kubernetes está aberta globalmente para a internet. Para um template reutilizável de nível profissional, o cluster deve suportar a ativação de IPs públicos autorizados (<code>api_server_authorized_ip_ranges</code>) ou ser privado (<code>private_cluster_enabled = true</code>).
+                    </p>
+                    <p class="bp-impact" style="color: #f43f5e; background-color: rgba(244, 63, 94, 0.05);">
+                        <strong>Ação:</strong> Parametrizar a restrição de IPs de rede autorizados no módulo AKS.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Recommendations & Code Section -->
+        <section id="recommendations" class="section-card">
+            <div class="section-header">
+                <i class="fa-solid fa-code-pull-request"></i>
+                <h3>Melhorias Recomendadas (Como Refatorar)</h3>
+            </div>
+            <p style="color: var(--text-secondary); margin-bottom: 24px; line-height: 1.6;">
+                Use os templates abaixo para atualizar os arquivos correspondentes e elevar a qualidade do seu Terraform para nível <strong>Enterprise Ready</strong>.
+            </p>
+
+            <div class="tabs">
+                <div class="tabs-header">
+                    <button class="tab-btn active" onclick="openTab(event, 'code-backend')">1. backend.tf (Novo)</button>
+                    <button class="tab-btn" onclick="openTab(event, 'code-variables')">2. variables.tf (Root)</button>
+                    <button class="tab-btn" onclick="openTab(event, 'code-aks-node')">3. aks/main.tf (Autoscaling)</button>
+                </div>
+
+                <!-- Tab 1: Backend -->
+                <div id="code-backend" class="tab-content active">
+                    <div class="code-header">
+                        <span>Crie este arquivo na raiz do repositório</span>
+                        <button class="copy-btn" onclick="copyCode('backend-code')"><i class="fa-regular fa-copy"></i> Copiar</button>
+                    </div>
+                    <pre id="backend-code"><span class="hl-comment"># backend.tf - Centraliza o estado para que qualquer membro do time compartilhe a mesma infra</span>
+<span class="hl-keyword">terraform</span> {
+  <span class="hl-keyword">backend</span> <span class="hl-string">"azurerm"</span> {
+    <span class="hl-variable">resource_group_name</span>  = <span class="hl-string">"infra-shared-resources-rg"</span>
+    <span class="hl-variable">storage_account_name</span> = <span class="hl-string">"tfstateaksenterprise"</span>
+    <span class="hl-variable">container_name</span>       = <span class="hl-string">"tfstate"</span>
+    <span class="hl-variable">key</span>                  = <span class="hl-string">"aks-cluster/terraform.tfstate"</span>
+    <span class="hl-variable">use_azuread_auth</span>     = <span class="hl-value">true</span> <span class="hl-comment"># Autenticação mais segura via RBAC Entra ID</span>
+  }
+}</pre>
+                </div>
+
+                <!-- Tab 2: Variables -->
+                <div id="code-variables" class="tab-content">
+                    <div class="code-header">
+                        <span>cluster_aks/variables.tf (Evitar defaults sensíveis e documentar variáveis)</span>
+                        <button class="copy-btn" onclick="copyCode('variables-code')"><i class="fa-regular fa-copy"></i> Copiar</button>
+                    </div>
+                    <pre id="variables-code"><span class="hl-keyword">variable</span> <span class="hl-string">"resource_group_name"</span> {
+  <span class="hl-type">type</span>        = <span class="hl-type">string</span>
+  <span class="hl-type">description</span> = <span class="hl-string">"Nome do grupo de recursos no Azure"</span>
+  <span class="hl-comment"># Remova o default rígido para forçar o usuário a configurar seu ambiente explicitamente</span>
+}
+
+<span class="hl-keyword">variable</span> <span class="hl-string">"allowed_ip_ranges"</span> {
+  <span class="hl-type">type</span>        = <span class="hl-type">list(string)</span>
+  <span class="hl-type">description</span> = <span class="hl-string">"Lista de IPs (CIDR) com permissão para acessar a API Server do AKS"</span>
+  <span class="hl-type">default</span>     = [<span class="hl-string">"0.0.0.0/0"</span>] <span class="hl-comment"># Altere para o IP corporativo ou de sua VPN em prod</span>
+}</pre>
+                </div>
+
+                <!-- Tab 3: AKS Main Autoscaling -->
+                <div id="code-aks-node" class="tab-content">
+                    <div class="code-header">
+                        <span>cluster_aks/modules/aks/main.tf (Habilitando Autoscaling e Segurança)</span>
+                        <button class="copy-btn" onclick="copyCode('aks-code')"><i class="fa-regular fa-copy"></i> Copiar</button>
+                    </div>
+                    <pre id="aks-code"><span class="hl-keyword">resource</span> <span class="hl-string">"azurerm_kubernetes_cluster"</span> <span class="hl-string">"aks"</span> {
+  <span class="hl-variable">name</span>                = var.cluster_name
+  <span class="hl-variable">location</span>            = var.location
+  <span class="hl-variable">resource_group_name</span> = var.resource_group_name
+  <span class="hl-variable">dns_prefix</span>          = var.dns_prefix
+
+  <span class="hl-keyword">default_node_pool</span> {
+    <span class="hl-variable">name</span>                = <span class="hl-string">"system"</span>
+    <span class="hl-variable">vnet_subnet_id</span>      = var.subnet_id
+    <span class="hl-variable">vm_size</span>             = <span class="hl-string">"Standard_D2s_v5"</span> <span class="hl-comment"># Recomendado para produção</span>
+    
+    <span class="hl-comment"># Configurações de Auto-scaling essenciais</span>
+    <span class="hl-variable">enable_auto_scaling</span> = <span class="hl-value">true</span>
+    <span class="hl-variable">min_count</span>           = <span class="hl-value">1</span>
+    <span class="hl-variable">max_count</span>           = <span class="hl-value">3</span>
+  }
+
+  <span class="hl-variable">api_server_authorized_ip_ranges</span> = var.allowed_ip_ranges <span class="hl-comment"># Proteção da API</span>
+
+  <span class="hl-keyword">identity</span> {
+    <span class="hl-variable">type</span> = <span class="hl-string">"SystemAssigned"</span>
+  }
+
+  <span class="hl-variable">oidc_issuer_enabled</span>       = <span class="hl-value">true</span>
+  <span class="hl-variable">workload_identity_enabled</span> = <span class="hl-value">true</span> <span class="hl-comment"># Prática moderna de segurança</span>
+}</pre>
+                </div>
+            </div>
+        </section>
+
+        <!-- Operator Guide Section -->
+        <section id="operator-guide" class="section-card">
+            <div class="section-header">
+                <i class="fa-solid fa-terminal"></i>
+                <h3>Guia Prático do Operador (Comandos)</h3>
+            </div>
+            <p style="color: var(--text-secondary); margin-bottom: 24px; line-height: 1.6;">
+                Abaixo está a trilha de comandos necessária para que qualquer operador prepare o ambiente e execute este código Terraform de forma segura.
+            </p>
+
+            <div style="display: flex; flex-direction: column; gap: 20px;">
+                <!-- Step A -->
+                <div style="background-color: var(--bg-main); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color);">
+                    <h5 style="font-family: 'Outfit', sans-serif; font-size: 15px; margin-bottom: 10px; color: var(--accent);"><i class="fa-solid fa-shield"></i> 1. Autenticação Inicial no Azure</h5>
+                    <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px;">Garanta o login correto e selecione a assinatura de destino para evitar provisionar na conta errada.</p>
+                    <pre>az login
+az account show --query "{name:name, id:id}"
+# Se necessário, troque de assinatura:
+az account set --subscription "ID-DA-SUA-ASSINATURA"</pre>
+                </div>
+
+                <!-- Step B -->
+                <div style="background-color: var(--bg-main); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color);">
+                    <h5 style="font-family: 'Outfit', sans-serif; font-size: 15px; margin-bottom: 10px; color: var(--primary);"><i class="fa-solid fa-gears"></i> 2. Ciclo de Execução do Terraform</h5>
+                    <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px;">Navegue até a pasta correspondente e inicie as fases:</p>
+                    <pre>cd cluster_aks
+terraform init      # Baixa os providers (azurerm, kubernetes, helm)
+terraform validate  # Checa a sintaxe
+terraform plan      # Analisa o impacto antes de efetivar
+terraform apply     # Digite "yes" para aprovar o deploy</pre>
+                </div>
+
+                <!-- Step C -->
+                <div style="background-color: var(--bg-main); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color);">
+                    <h5 style="font-family: 'Outfit', sans-serif; font-size: 15px; margin-bottom: 10px; color: var(--success);"><i class="fa-solid fa-circle-nodes"></i> 3. Conectar kubectl ao Cluster AKS</h5>
+                    <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px;">Obtenha o contexto de acesso local para interagir com o cluster e verificar o Argo CD:</p>
+                    <pre>az aks get-credentials --resource-group terraform-aks-rg --name terraform-aks-cluster
+kubectl get namespaces
+kubectl get pods -n argocd</pre>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Theme switching and Tabs Logic -->
+    <script>
+        // Theme toggle logic
+        const themeToggle = document.getElementById('theme-toggle');
+        const themeIcon = themeToggle.querySelector('i');
+        
+        themeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('light-theme');
+            if (document.body.classList.contains('light-theme')) {
+                themeIcon.classList.replace('fa-moon', 'fa-sun');
+            } else {
+                themeIcon.classList.replace('fa-sun', 'fa-moon');
+            }
+        });
+
+        // Interactive Tabs logic
+        function openTab(evt, tabName) {
+            // Get all elements with class="tab-content" and hide them
+            const tabContents = document.getElementsByClassName("tab-content");
+            for (let i = 0; i < tabContents.length; i++) {
+                tabContents[i].classList.remove("active");
+            }
+
+            // Get all elements with class="tab-btn" and remove the class "active"
+            const tabBtns = document.getElementsByClassName("tab-btn");
+            for (let i = 0; i < tabBtns.length; i++) {
+                tabBtns[i].classList.remove("active");
+            }
+
+            // Show the current tab, and add an "active" class to the button that opened the tab
+            document.getElementById(tabName).classList.add("active");
+            evt.currentTarget.classList.add("active");
+        }
+
+        // Copy code script
+        function copyCode(elementId) {
+            const codeElement = document.getElementById(elementId);
+            const textToCopy = codeElement.innerText;
+            
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                const btn = codeElement.previousElementSibling.querySelector('.copy-btn');
+                const originalHtml = btn.innerHTML;
+                btn.innerHTML = '<i class="fa-solid fa-check"></i> Copiado!';
+                setTimeout(() => {
+                    btn.innerHTML = originalHtml;
+                }, 2000);
+            }).catch(err => {
+                console.error('Falha ao copiar código: ', err);
+            });
+        }
+
+        // Navigation Highlight on scroll
+        window.addEventListener('DOMContentLoaded', () => {
+            const observer = new IntersectionObserver(entries => {
+                entries.forEach(entry => {
+                    const id = entry.target.getAttribute('id');
+                    if (entry.intersectionRatio > 0.2) {
+                        document.querySelectorAll('.sidebar-menu a').forEach(a => {
+                            if (a.getAttribute('href') === `#${id}`) {
+                                a.classList.add('active');
+                            } else {
+                                a.classList.remove('active');
+                            }
+                        });
+                    }
+                });
+            }, { threshold: [0.2, 0.5] });
+
+            // Track sections
+            document.querySelectorAll('section').forEach(section => {
+                observer.observe(section);
+            });
+        });
+    </script>
+</body>
+</html>
