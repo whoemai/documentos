@@ -50,7 +50,13 @@ terraform apply
 ```
 *Digite **`yes`** para confirmar.*
 
-### Passo E: Destruir Recursos (Opcional)
+### Passo E: Adicionar o Contexto do AKS no Terminal
+Antes de acessar o Argo CD ou gerenciar o cluster via `kubectl`, adicione o contexto do AKS ao seu terminal:
+```powershell
+az aks get-credentials --resource-group terraform-aks-rg --name terraform-aks-cluster
+```
+
+### Passo F: Destruir Recursos (Opcional)
 Se precisar remover todos os recursos da Azure para evitar custos futuros:
 ```powershell
 terraform destroy
