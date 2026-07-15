@@ -18,6 +18,13 @@ O Argo CD gera uma senha inicial criptografada e a salva no segredo `argocd-init
 ```powershell
 [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}")))
 ```
+
+Se você estiver usando o **Git Bash (MINGW64)**, Linux ou Mac, utilize este comando em vez do acima:
+
+```bash
+kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
+```
+
 *Copie a senha impressa no terminal.*
 
 ---
