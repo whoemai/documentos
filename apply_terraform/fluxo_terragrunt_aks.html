@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fluxo e Boas Práticas Terraform - AKS & Argo CD</title>
+    <title>Fluxo e Boas Práticas Terragrunt - AKS & Argo CD</title>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -774,7 +774,7 @@
                 <i class="fa-solid fa-moon"></i>
             </button>
             <div style="font-size: 11px; color: var(--text-muted); text-align: center;">
-                Terraform v1.5.0+ <br> AzureRM ~> 3.0
+                Terragrunt v0.50+ / Terraform v1.5.0+ <br> AzureRM ~> 3.0
             </div>
         </div>
     </aside>
@@ -784,7 +784,7 @@
         <!-- Header -->
         <header>
             <div class="header-title">
-                <h2>Fluxo & Boas Práticas Terraform</h2>
+                <h2>Fluxo & Boas Práticas Terragrunt</h2>
                 <p>Análise técnica detalhada da infraestrutura do AKS com Argo CD integrado</p>
             </div>
             <div class="controls">
@@ -935,7 +935,7 @@
                             <div class="timeline-details-col">
                                 <h5><i class="fa-solid fa-arrow-right-to-bracket icon-in"></i> Inputs Utilizados</h5>
                                 <ul>
-                                    <li><i class="fa-solid fa-check"></i> <code>resource_group_name</code> ("terraform-aks-rg")</li>
+                                    <li><i class="fa-solid fa-check"></i> <code>resource_group_name</code> ("rg-aks-dev")</li>
                                     <li><i class="fa-solid fa-check"></i> <code>location</code> ("eastus")</li>
                                 </ul>
                             </div>
@@ -1072,7 +1072,7 @@
                         Estado Local (terraform.tfstate local)
                     </div>
                     <p class="bp-desc">
-                        Atualmente, o state file do Terraform é gravado localmente no diretório do operador. Se múltiplos usuários rodarem esse código, eles criarão recursos duplicados, sobrescreverão o state ou perderão o controle das instâncias existentes no Azure.
+                        Atualmente, o state file do Terragrunt é gravado localmente no diretório do operador. Se múltiplos usuários rodarem esse código, eles criarão recursos duplicados, sobrescreverão o state ou perderão o controle das instâncias existentes no Azure.
                     </p>
                     <p class="bp-impact" style="color: #f43f5e; background-color: rgba(244, 63, 94, 0.05);">
                         <strong>Ação Crítica Necessária:</strong> Configurar um backend do Azure Storage Account com State Locking ativado.
@@ -1149,7 +1149,7 @@
                 <div class="tabs-header">
                     <button class="tab-btn active" onclick="openTab(event, 'code-backend')">1. backend.tf (Novo)</button>
                     <button class="tab-btn" onclick="openTab(event, 'code-variables')">2. variables.tf (Root)</button>
-                    <button class="tab-btn" onclick="openTab(event, 'code-aks-node')">3. aks/main.tf (Autoscaling)</button>
+                    <button class="tab-btn" onclick="openTab(event, 'code-aks-node')">3. aks/terragrunt.hcl (Autoscaling)</button>
                 </div>
 
                 <!-- Tab 1: Backend -->
@@ -1192,7 +1192,7 @@
                 <!-- Tab 3: AKS Main Autoscaling -->
                 <div id="code-aks-node" class="tab-content">
                     <div class="code-header">
-                        <span>cluster_aks/modules/aks/main.tf (Habilitando Autoscaling e Segurança)</span>
+                        <span>cluster_aks/modules/aks/terragrunt.hcl (Habilitando Autoscaling e Segurança)</span>
                         <button class="copy-btn" onclick="copyCode('aks-code')"><i class="fa-regular fa-copy"></i> Copiar</button>
                     </div>
                     <pre id="aks-code"><span class="hl-keyword">resource</span> <span class="hl-string">"azurerm_kubernetes_cluster"</span> <span class="hl-string">"aks"</span> {
@@ -1248,20 +1248,20 @@ az account set --subscription "ID-DA-SUA-ASSINATURA"</pre>
 
                 <!-- Step B -->
                 <div style="background-color: var(--bg-main); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color);">
-                    <h5 style="font-family: 'Outfit', sans-serif; font-size: 15px; margin-bottom: 10px; color: var(--primary);"><i class="fa-solid fa-gears"></i> 2. Ciclo de Execução do Terraform</h5>
+                    <h5 style="font-family: 'Outfit', sans-serif; font-size: 15px; margin-bottom: 10px; color: var(--primary);"><i class="fa-solid fa-gears"></i> 2. Ciclo de Execução do Terragrunt</h5>
                     <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px;">Navegue até a pasta correspondente e inicie as fases:</p>
                     <pre>cd cluster_aks
-terraform init      # Baixa os providers (azurerm, kubernetes, helm)
+terragrunt run-all init      # Baixa os providers (azurerm, kubernetes, helm)
 terraform validate  # Checa a sintaxe
-terraform plan      # Analisa o impacto antes de efetivar
-terraform apply     # Digite "yes" para aprovar o deploy</pre>
+terragrunt run-all plan      # Analisa o impacto antes de efetivar
+terragrunt run-all apply     # Digite "yes" para aprovar o deploy</pre>
                 </div>
 
                 <!-- Step C -->
                 <div style="background-color: var(--bg-main); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color);">
                     <h5 style="font-family: 'Outfit', sans-serif; font-size: 15px; margin-bottom: 10px; color: var(--success);"><i class="fa-solid fa-circle-nodes"></i> 3. Conectar kubectl ao Cluster AKS</h5>
                     <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px;">Obtenha o contexto de acesso local para interagir com o cluster e verificar o Argo CD:</p>
-                    <pre>az aks get-credentials --resource-group terraform-aks-rg --name terraform-aks-cluster
+                    <pre>az aks get-credentials --resource-group rg-aks-dev --name terragrunt-aks-dev
 kubectl get namespaces
 kubectl get pods -n argocd</pre>
                 </div>
